@@ -1,21 +1,25 @@
 
 function HWQ2()
+    % housekeeping
     clc; home;
     close all hidden
-
+    % prepare Image
     Img = imread('input_exercise2.png');
     I = (uint8(mean(Img, 3)));
     K = mat2gray(I);
-    
+    % get/set props
     radius = 2;
     structSize = radius * 2 + 1;
     [out, ix, iy] = guassfilter(2, K);
     [imgYSize, imgXSize]= size(out);
-    
+    % create cornerness and roundness matrices
     W = [];
     Q = [];
+    WQMc = [];
+    % iterate through image
     for yCenter = 1 + radius:imgYSize - radius
        for xCenter = 1 + radius:imgXSize - radius
+           % temp values
            I2x  = 0;
            I2y  = 0;
            IxIy = 0;
@@ -37,9 +41,24 @@ function HWQ2()
            % building the M matrix
            M = [I2x, IxIy; IxIy, I2y];
            % finding the cornerness and roundness
-           W(yCenter, xCenter) = trace(M) / 2 - sqrt(power(trace(M)/2, 2) - det(M));
-           Q(yCenter, xCenter) = 4 * det(M) / power(trace(M), 2);
+           wValue = trace(M) / 2 - sqrt(power(trace(M)/2, 2) - det(M));
+           zeroCheck = power(trace(M), 2);
+           qValue = 0;
+           if (zeroCheck > 0) qValue = 4 * det(M) / zeroCheck; end
+           McValue = 0;
+           if (wValue > 0.0004) && (qValue > 0.5) McValue = 1; end
+           W(yCenter, xCenter) = wValue;
+           Q(yCenter, xCenter) = qValue;
+           WQMc(yCenter, xCenter) = wValue * McValue + qValue * McValue;
        end
     end
-    imshow(Q);
+    
+    % output roundness and cornerness
+    subplot(1,4,1); imshow(Q); title('roundness');
+    subplot(1,4,2); imshow(W); title('cornerness');
+    % Set Colors
+    % colormap(jet);
+    % regional Max
+    regionalMax = imregionalmax(WQMc);
+    subplot(1,4,3); imshow(regionalMax); title('regionalMax');
 end
